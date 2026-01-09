@@ -15,6 +15,7 @@ from ..decorators import log_action
 
 
 class UserManager:
+    """Класс для управления пользователями: регистрация, вход, выход."""
     def __init__(self):
         self.current_user: Optional[User] = None
 
@@ -104,6 +105,7 @@ class UserManager:
 
 
 class PortfolioManager:
+    """Класс для управления портфелями пользователей."""
     def get_user_portfolio(self, user_id: int) -> Portfolio:
         portfolio_data = db.find_one("portfolios", user_id=user_id)
 
@@ -138,6 +140,9 @@ class PortfolioManager:
     def buy_currency(self, user_id: int,
                      currency_code: str,
                      amount: float) -> Dict[str, Any]:
+        if not isinstance(amount, (int, float)):
+            raise ValueError("'amount' должен быть числом")
+
         if amount <= 0:
             raise ValueError("'amount' должен быть положительным числом")
 
@@ -178,30 +183,36 @@ class PortfolioManager:
     def sell_currency(self, user_id: int,
                       currency_code: str,
                       amount: float) -> Dict[str, Any]:
+        """Продажа валюты пользователем."""
+        if not isinstance(amount, (int, float)):
+            raise ValueError("Сумма продажи должна быть числом")
         if amount <= 0:
-            raise ValueError("'amount' должен быть положительным числом")
+            raise ValueError("Сумма продажи должна быть положительным числом")
 
+        currency_code = currency_code.upper()
         get_currency(currency_code)
 
         portfolio = self.get_user_portfolio(user_id)
-        wallet = portfolio.get_wallet(currency_code)
 
+        wallet = portfolio.get_wallet(currency_code)
         if not wallet:
             raise CurrencyNotFoundError(f"У вас нет кошелька '{currency_code}'")
 
+        # списываем валюту
         old_balance = wallet.balance
         wallet.withdraw(amount)
 
-        self.save_user_portfolio(portfolio)
-
+        # получаем курс
         rate_manager = RateManager()
-        try:
-            rate_info = rate_manager.get_rate(currency_code, "USD")
-            exchange_rate = rate_info["rate"]
-            estimated_revenue = amount * exchange_rate
-        except (CurrencyNotFoundError, ApiRequestError):
-            exchange_rate = None
-            estimated_revenue = None
+        rate_info = rate_manager.get_rate(currency_code, "USD")
+        exchange_rate = rate_info["rate"]
+        revenue = amount * exchange_rate
+
+        # начисляем USD
+        usd_wallet = portfolio.add_currency("USD")
+        usd_wallet.deposit(revenue)
+
+        self.save_user_portfolio(portfolio)
 
         return {
             "currency": currency_code,
@@ -209,13 +220,15 @@ class PortfolioManager:
             "old_balance": old_balance,
             "new_balance": wallet.balance,
             "exchange_rate": exchange_rate,
-            "estimated_revenue": estimated_revenue,
+            "usd_revenue": revenue,
             "user_id": user_id
         }
 
 
 class RateManager:
+    """Класс для работы с курсами валют."""
     def get_rate(self, from_currency: str, to_currency: str) -> Dict[str, Any]:
+        """Получает курс валюты между двумя валютами."""
         from_currency = from_currency.upper()
         to_currency = to_currency.upper()
 
@@ -274,3 +287,8 @@ class RateManager:
             raise ApiRequestError(str(e))
 
         raise ApiRequestError(f"Курс для {currency_pair} недоступен")
+
+
+def get_rate(from_currency: str, to_currency: str) -> Dict[str, Any]:
+    rate_manager = RateManager()
+    return rate_manager.get_rate(from_currency, to_currency)

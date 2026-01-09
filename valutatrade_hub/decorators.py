@@ -1,6 +1,5 @@
 import functools
-import logging
-from typing import Any, Callable, Optional, Dict
+from typing import Any, Callable
 
 from .logging_config import get_logger
 
@@ -18,7 +17,7 @@ def log_action(action_name: str, verbose: bool = False):
                 # Логируем успех
                 logger.info(
                     f"Action {action_name} completed successfully",
-                    extra={'action': action_name, 'result': 'OK'}
+                    extra={"action": action_name, "result": "OK"}
                 )
                 return result
 
@@ -26,7 +25,7 @@ def log_action(action_name: str, verbose: bool = False):
                 # Логируем ошибку
                 logger.error(
                     f"Action {action_name} failed: {str(e)}",
-                    extra={'action': action_name, 'result': 'ERROR', 'error': str(e)}
+                    extra={"action": action_name, "result": "ERROR", "error": str(e)}
                 )
                 raise
 

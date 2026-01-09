@@ -82,11 +82,15 @@ class Wallet:
         self._balance = float(value)
 
     def deposit(self, amount: float):
+        if not isinstance(amount, (int, float)):
+            raise ValueError("Сумма пополнения должна быть числом")
         if amount <= 0:
             raise ValueError("Сумма пополнения должна быть положительной")
         self.balance += amount
 
     def withdraw(self, amount: float):
+        if not isinstance(amount, (int, float)):
+            raise ValueError("Сумма снятия должна быть числом")
         if amount <= 0:
             raise ValueError("Сумма снятия должна быть положительной")
         if amount > self._balance:
@@ -113,14 +117,16 @@ class Portfolio:
     def wallets(self) -> Dict[str, Wallet]:
         return self._wallets.copy()
 
-    def add_currency(self, currency_code: str):
+    def add_currency(self, currency_code: str) -> Wallet:
         from .currencies import get_currency
 
-        get_currency(currency_code)
-
         currency_code = currency_code.upper()
+        get_currency(currency_code)  # валидация
+
         if currency_code not in self._wallets:
             self._wallets[currency_code] = Wallet(currency_code)
+
+        return self._wallets[currency_code]
 
     def get_wallet(self, currency_code: str) -> Optional[Wallet]:
         currency_code = currency_code.upper()

@@ -26,20 +26,6 @@ def write_json_file(file_path: str, data: List[Dict[str, Any]]):
         json.dump(data, f, indent=2, ensure_ascii=False, default=str)
 
 
-def get_next_user_id(users_data: List[Dict[str, Any]]) -> int:
-    if not users_data:
-        return 1
-    return max(user.get("user_id", 0) for user in users_data) + 1
-
-
-def datetime_to_str(dt: datetime) -> str:
-    return dt.isoformat()
-
-
-def str_to_datetime(dt_str: str) -> datetime:
-    return datetime.fromisoformat(dt_str)
-
-
 def datetime_to_str(dt: datetime) -> str:
     return dt.isoformat()
 

@@ -10,7 +10,7 @@ from ..core.currencies import get_all_currencies
 
 
 class CLIInterface:
-
+    """Класс CLI для взаимодействия с ValutaTrade Hub через командную строку."""
     def __init__(self):
         self.user_manager = UserManager()
         self.portfolio_manager = PortfolioManager()
@@ -21,6 +21,7 @@ class CLIInterface:
 
     @property
     def rates_updater(self):
+        """Возвращает объект RatesUpdater или stub, если модуль недоступен."""
         if self._rates_updater is None:
             try:
                 from ..parser_service.updater import RatesUpdater
@@ -41,6 +42,7 @@ class CLIInterface:
 
     @property
     def parser_scheduler(self):
+        """Возвращает объект ParserScheduler или stub, если модуль недоступен."""
         if self._parser_scheduler is None:
             try:
                 from ..parser_service.scheduler import ParserScheduler
@@ -56,6 +58,7 @@ class CLIInterface:
         return self._parser_scheduler
 
     def run(self):
+        """Главная точка входа CLI. Обрабатывает аргументы командной строки."""
         parser = argparse.ArgumentParser(
             description="ValutaTrade Hub - Платформа для торговли валютами",
             formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -164,6 +167,7 @@ class CLIInterface:
             sys.exit(1)
 
     def _get_help_epilog(self) -> str:
+        """Возвращает текст примеров использования для аргпарсера."""
         return """
 Примеры использования:
   Основные команды:
@@ -186,10 +190,12 @@ class CLIInterface:
 """
 
     def _check_logged_in(self) -> None:
+        """Проверяет, что пользователь авторизован, иначе выбрасывает ValueError."""
         if not self.user_manager.current_user:
             raise ValueError("Сначала выполните login")
 
     def _handle_error(self, error: Exception):
+        """Универсальная обработка ошибок CLI с выводом сообщений пользователю."""
         if isinstance(error, InsufficientFundsError):
             print(f"Ошибка: {error}")
         elif isinstance(error, CurrencyNotFoundError):
@@ -204,15 +210,18 @@ class CLIInterface:
             print(f"Ошибка: {error}")
 
     def handle_register(self, username: str, password: str):
+        """Обрабатывает команду регистрации пользователя."""
         result = self.user_manager.register_user(username, password)
         print(f"Пользователь '{username}' зарегистрирован (id={result['user_id']}).")
         print("Войдите: login --username {} --password ****".format(username))
 
     def handle_login(self, username: str, password: str):
+        """Обрабатывает команду авторизации пользователя."""
         self.user_manager.login_user(username, password)
         print(f"Вы вошли как '{username}'")
 
     def handle_show_portfolio(self, base_currency: str):
+        """Выводит портфель пользователя с конверсией в базовую валюту."""
         self._check_logged_in()
 
         user = self.user_manager.current_user
@@ -248,6 +257,7 @@ class CLIInterface:
         print(f"ИТОГО: {total_value:,.2f} {base_currency}")
 
     def handle_buy(self, currency: str, amount: float):
+        """Обрабатывает команду покупки валюты пользователем."""
         self._check_logged_in()
 
         user = self.user_manager.current_user
@@ -268,6 +278,7 @@ class CLIInterface:
             print(f"Оценочная стоимость покупки: {result['estimated_cost']:,.2f} USD")
 
     def handle_sell(self, currency: str, amount: float):
+        """Обрабатывает команду продажи валюты пользователем."""
         self._check_logged_in()
 
         user = self.user_manager.current_user
@@ -288,6 +299,7 @@ class CLIInterface:
             print(f"Оценочная выручка: {result['estimated_revenue']:,.2f} USD")
 
     def handle_get_rate(self, from_currency: str, to_currency: str):
+        """Выводит текущий курс между двумя валютами."""
         rate_info = (self.rate_manager
                      .get_rate(from_currency.upper(), to_currency.upper()))
 
@@ -300,6 +312,7 @@ class CLIInterface:
             print(f"Обратный курс {to_currency}→{from_currency}: {reverse_rate:.6f}")
 
     def handle_list_currencies(self):
+        """Выводит список всех поддерживаемых валют."""
 
         currencies = get_all_currencies()
         print("Поддерживаемые валюты:")
@@ -311,6 +324,7 @@ class CLIInterface:
         print(f"\nВсего: {len(currencies)} валют")
 
     def handle_update_rates(self, source: str):
+        """Обновляет курсы валют из указанных источников."""
         print("Starting rates update...")
 
         sources_map = {
@@ -344,6 +358,7 @@ class CLIInterface:
                           currency: str = None,
                           top: int = None,
                           base: str = "USD"):
+        """Выводит таблицу актуальных курсов валют из кеша."""
         current_rates = self.rates_updater.storage.get_current_rates()
 
         if not current_rates.get("pairs"):
@@ -405,6 +420,7 @@ class CLIInterface:
         print(f"\nTotal pairs: {len(sorted_pairs)}")
 
     def handle_start_parser(self):
+        """Запускает фоновый парсер курсов."""
         try:
             self.parser_scheduler.start()
             print("Parser scheduler started successfully")
@@ -415,6 +431,7 @@ class CLIInterface:
             print(f"Failed to start parser scheduler: {e}")
 
     def handle_stop_parser(self):
+        """Останавливает фоновый парсер курсов."""
         try:
             self.parser_scheduler.stop()
             print("Parser scheduler stopped successfully")
@@ -434,7 +451,7 @@ class CLIInterface:
             print(f"Active jobs: {status['jobs_count']}")
 
         print(f"\nLast update: {update_status.get('last_refresh', 'Never')}")
-        freshness = "FRESH" if update_status.get('is_fresh') else "STALE"
+        freshness = "FRESH" if update_status.get("is_fresh") else "STALE"
         print(f"Data freshness: {freshness}")
 
         if update_status.get("age_seconds"):

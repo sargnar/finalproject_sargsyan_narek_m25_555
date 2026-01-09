@@ -12,6 +12,7 @@ prettytable = "^3.5.0"
 toml = "^0.10.2"
 requests = "^2.31.0"
 apscheduler = "^3.10.4"
+wcwidth = "0.2.13"
 
 [tool.poetry.group.dev.dependencies]
 ruff = ">=0.14.3,<0.15.0"
@@ -25,8 +26,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 88
-select = ["E", "F", "W", "C", "Q"]
-ignore = ["E203", "F811"]
 
 [tool.valutatrade]
 data_dir = "data"
